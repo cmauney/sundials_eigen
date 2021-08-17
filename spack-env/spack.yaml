@@ -5,7 +5,8 @@ spack:
   # define the compiler/package specs
   definitions:
   - compiler: ['gcc@9:']
-  - packages: [sundials~mpi~ARKODE~CVODES~IDA~IDAS~KINSOL~examples, eigen, fmt cxxstd=17]
+  - packages: [sundials~mpi~ARKODE~CVODES~IDA~IDAS~KINSOL~examples, eigen, fmt cxxstd=17,
+      catch2]
   # combine compiler/package specs
   specs:
   - matrix:

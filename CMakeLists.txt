@@ -21,11 +21,16 @@ target_compile_features(cve::flags
 
 target_compile_options(cve::flags
     INTERFACE
+        "-fmax-errors=2"
         $<${release}:
             "-Ofast"
         >
 )
 
+target_include_directories(cve::flags
+INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/autodiff>
+)
 target_link_libraries(cve::flags
     INTERFACE
         SUNDIALS::CVODE

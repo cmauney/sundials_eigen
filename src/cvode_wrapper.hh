@@ -8,17 +8,17 @@
 #include <sunlinsol/sunlinsol_dense.h> /* access to dense SUNLinearSolver      */
 #include <sundials/sundials_types.h>   /* defs. of realtype, sunindextype      */
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
+//#include <Eigen/Core>
+//#include <Eigen/Dense>
 
+#include <autodiff/forward/real.hpp>
+#include <autodiff/forward/real/eigen.hpp>
+#include "types.hh"
 //#define Ith(v,i)    NV_Ith_S(v,i-1)         /* Ith numbers components 1..NEQ */
 //#define IJth(A,i,j) SM_ELEMENT_D(A,i-1,j-1) /* IJth numbers rows,cols 1..NEQ */
 
-using vector_t = Eigen::VectorXd;
-using matrix_t = Eigen::MatrixXd;
+using namespace types;
 
-using vector_map_t = Eigen::Map<vector_t>;
-using matrix_map_t = Eigen::Map<matrix_t>;
 
 namespace cvode_wrapper
 {
@@ -158,15 +158,6 @@ struct cvode_stepper
         }
     }
 
-
-    auto copy_evect(const vector_t& a, N_Vector b)
-    {
-        for(int i = 0; i < N; ++i)
-        {
-            NV_Ith_S(b, i) = a(i);
-        }
-    }
-
     auto initialize(vector_t& y0)
     {
         // set system size
@@ -174,10 +165,13 @@ struct cvode_stepper
 
         // allocate solution vector
         //y = N_VNew_Serial(N);
+
+        //cv_y = N_VMake_Serial(N, static_cast<Eigen::VectorXd>(y0).data());
         cv_y = N_VMake_Serial(N, y0.data());
+        //cv_y = N_VNew_Serial(N);
 
         // fill solution vector
-        //copy_evect(y0, y);
+        //copy_evect(y0, cv_y);
 
         // linear solver data
         // TODO: implement sparse
@@ -187,6 +181,7 @@ struct cvode_stepper
         // init a new cvode context
         cvode_mem = CVodeCreate(cv_lmm[options.step_method]);
         // init integrator memory
+
         CVodeInit(cvode_mem, [](realtype t, N_Vector y, N_Vector ydot, void* user_data)
             {
                 System* sys = static_cast<System*>(user_data);
@@ -236,6 +231,37 @@ struct cvode_stepper
         fmt::print("At t = {} y = {} {} {}\n", sol_time, NV_Ith_S(cv_y,0), NV_Ith_S(cv_y,1),NV_Ith_S(cv_y,2));
     }
 
+    auto step()
+    {
+
+    }
+
+    auto check_retval(void *returnvalue, const char *funcname, int opt)
+    {
+        int *retval;
+
+        /* Check if SUNDIALS function returned NULL pointer - no memory allocated */
+        if (opt == 0 && returnvalue == NULL) {
+            fmt::print(stderr, "\nSUNDIALS_ERROR: {} failed - returned NULL pointer\n\n",
+                funcname);
+            return(1); }
+
+        /* Check if retval < 0 */
+        else if (opt == 1) {
+            retval = (int *) returnvalue;
+            if (*retval < 0) {
+            fmt::print(stderr, "\nSUNDIALS_ERROR: {} failed with retval = %d\n\n",
+                funcname, *retval);
+            return(1); }}
+
+        /* Check if function returned NULL pointer - no memory allocated */
+        else if (opt == 2 && returnvalue == NULL) {
+            fmt::print(stderr, "\nMEMORY_ERROR: {} failed - returned NULL pointer\n\n",
+                funcname);
+            return(1); }
+
+        return(0);
+    }
     auto letsgo()
     {
         auto iout = 0;
