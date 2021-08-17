@@ -3,3 +3,5 @@
 build/
 env/
 cv_examples/
+spack-env/.spack-env
+spack-env/spack.lock
