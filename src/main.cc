@@ -25,7 +25,6 @@ struct System
         ydot(2) = 3.0E7*y(1)*y(1);
         ydot(1) = -ydot(0) - ydot(2);
 
-        return ydot;
     }
 
     template<class T>

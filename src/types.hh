@@ -5,7 +5,6 @@
 
 namespace types{
 
-
 using dvector_t = autodiff::VectorXreal;
 using vector_t = Eigen::VectorXd;
 using matrix_t = Eigen::MatrixXd;

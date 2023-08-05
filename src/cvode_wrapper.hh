@@ -30,8 +30,8 @@ struct cv_options
 {
     // Integrator settings
     std::string step_method = "BDF";
-    double      rtol        = 1.0E-4;   // relative tolerance
-    double      atol        = 1.0E-14;   // absolute tolerance
+    double      rtol        = 1.0E-8;   // relative tolerance
+    double      atol        = 1.0E-8;   // absolute tolerance
     int         max_steps   = 500;      // max number of steps between outputs
     int         max_order   = 5;        // max order of linear multistep
     double      t0          = 0.0;      // inital time
@@ -137,6 +137,8 @@ struct cvode_stepper
     SUNMatrix A;        //
     SUNLinearSolver LS;
 
+    sundials::Context sunctx;
+
     cvode_stepper(cv_options opts) : options(std::move(opts)), cvode_mem(nullptr)
     {
 
@@ -167,7 +169,7 @@ struct cvode_stepper
         //y = N_VNew_Serial(N);
 
         //cv_y = N_VMake_Serial(N, static_cast<Eigen::VectorXd>(y0).data());
-        cv_y = N_VMake_Serial(N, y0.data());
+        cv_y = N_VMake_Serial(N, y0.data(), sunctx);
         //cv_y = N_VNew_Serial(N);
 
         // fill solution vector
@@ -175,11 +177,11 @@ struct cvode_stepper
 
         // linear solver data
         // TODO: implement sparse
-        A = SUNDenseMatrix(N, N);
-        LS = SUNLinSol_Dense(cv_y, A);
+        A = SUNDenseMatrix(N, N, sunctx);
+        LS = SUNLinSol_Dense(cv_y, A, sunctx);
 
         // init a new cvode context
-        cvode_mem = CVodeCreate(cv_lmm[options.step_method]);
+        cvode_mem = CVodeCreate(cv_lmm[options.step_method], sunctx);
         // init integrator memory
 
         CVodeInit(cvode_mem, [](realtype t, N_Vector y, N_Vector ydot, void* user_data)
@@ -203,7 +205,7 @@ struct cvode_stepper
         CVodeSetMaxOrd(cvode_mem, options.max_order);
         // set tolarances
         // TODO: allow vector tolerance
-        abst = N_VNew_Serial(N);
+        abst = N_VNew_Serial(N, sunctx);
         NV_Ith_S(abst, 0) = 1.0E-8; NV_Ith_S(abst, 1) = 1.0E-14; NV_Ith_S(abst, 2) = 1.0E-6;
         CVodeSVtolerances(cvode_mem, options.rtol, abst);
         //CVodeSStolerances(cvode_mem, options.rtol, options.atol);
@@ -276,7 +278,7 @@ struct cvode_stepper
                 iout++;
                 tout *= 10.0;
             }
-        if (iout == 12) break;
+            if (iout == 12) break;
         }
         check_ans(cv_y,sol_time,options.rtol,abst);
     }

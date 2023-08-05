@@ -5,7 +5,7 @@ spack:
   # define the compiler/package specs
   definitions:
   - compiler: ['gcc@9:']
-  - packages: [sundials~mpi~ARKODE~CVODES~IDA~IDAS~KINSOL~examples, eigen, fmt cxxstd=17,
+  - packages: [sundials~mpi~ARKODE~CVODES~IDA~IDAS~KINSOL~examples~examples-install cxxstd=17, eigen, fmt cxxstd=17,
       catch2]
   # combine compiler/package specs
   specs:
@@ -13,5 +13,5 @@ spack:
     - [$packages]
     - [$%compiler]
   # packages which have no link dependency (e.g. used only for building)
-  - cmake
+  - 'cmake@3.20:'
   view: true
